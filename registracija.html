@@ -51,6 +51,7 @@
                 const grad = document.getElementById('grad').value;
                 const adresa = document.getElementById('adresa').value;
                 const sifra = document.getElementById('sifra').value;
+                const referralCode = document.getElementById('referral-code').value; // Referal kod
 
                 const usernameQuery = query(collection(db, 'network'), where("username", "==", username));
                 const usernameSnapshot = await getDocs(usernameQuery);
@@ -78,13 +79,35 @@
                         grad,
                         adresa,
                         sifra,
+                        referralCode, // Dodavanje referal koda u bazu
                         amount: 0,
                         clickCount: 0
                     });
-                    window.location.href = 'index.html?ime=' + ime + '&prezime=' + prezime;
+                    // Umjesto preusmjeravanja na index.html, preusmjeri na stranicu za prijavu
+                    document.getElementById('form-container').style.display = 'none'; // Sakrij formu
+                    document.getElementById('registration-box').style.display = 'none'; // Sakrij registration box
+                    alert("Registracija uspješna! Možete se prijaviti.");
+                    document.getElementById('login-button').click(); // Otvori prijavu
                 } catch (e) {
                     console.error("Greška pri dodavanju dokumenta: ", e);
                 }
+
+                if (referralCode) {
+        const existingUserQuery = query(collection(db, 'network'), where("username", "==", referralCode));
+        const querySnapshot = await getDocs(existingUserQuery);
+
+        if (!querySnapshot.empty) {
+            querySnapshot.forEach(async (doc) => {
+                const userId = doc.id;
+                const userData = doc.data();
+
+                // Ažuriraj cijenu postojećeg korisnika
+                let currentPrice = userData.currentPrice || 0.00;
+                currentPrice += 0.01; // Povećanje cijene za 0.01
+                await updateFirestore(userId, currentPrice, userData.lastClickTime); // Ažuriraj Firestore
+            });
+        }
+    }
             });
 
             document.getElementById('submit-login').addEventListener('click', async () => {
@@ -115,6 +138,12 @@
                 }
             });
 
+
+
+
+
+            
+
             const togglePassword = (inputId, iconId) => {
                 const input = document.getElementById(inputId);
                 const icon = document.getElementById(iconId);
@@ -143,12 +172,10 @@
     <div class="background blue"></div>
     <div class="background purple"></div>
 
-
     <div class="image-container">
         <img src="images/upitnik.png" alt="Delta Image" class="responsive-image">
     </div>
     
-
     <div id="form-container" style="display:none; position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background-color: white; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.5); padding: 20px; z-index: 1000;">
         <h2 id="form-title">Prijava</h2>
         <div id="login-form">
@@ -174,18 +201,13 @@
                 <input type="password" id="sifra" placeholder="Šifra" required>
                 <span id="toggle-sifra" class="toggle-password material-icons" style="cursor: pointer;">visibility</span>
             </div>
+            <input type="text" id="referral-code" placeholder="Referal kod (opcionalno)"> <!-- Referal kod -->
             <button id="submit-registration" style="color: black; display: block; margin: 0 auto; width: 108%;">Registruj se</button>
         </div>
     </div>
-    
-    
-
-
-    
-
-    
 </body>
 </html>
+
 
 <style>
     body {
